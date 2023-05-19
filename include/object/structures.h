@@ -48,6 +48,8 @@ struct uintr_receiver {
 /* User Interrupt Sender Status Table Context */
 struct uist_ctx {
 	struct uist_entry *uist;
+
+    int refs;
 };
 
 /* User Interrupt Sender */
