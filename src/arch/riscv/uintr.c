@@ -3,20 +3,22 @@
 const int MAX_SIZE = 16;
 
 uist_ctx uist_ctx_pool[MAX_SIZE];
-uist uist_pool[MAX_SIZE][UINTR_MAX_UIST_NR];
+uist_entry uist_entry_pool[MAX_SIZE][UINTR_MAX_UIST_NR];
 uintr_sender uintr_sender_pool[MAX_SIZE];
 bool uist_ctx_used[MAX_SIZE];
-bool uist_used[MAX_SIZE];
+bool uist_entry_used[MAX_SIZE];
 bool uintr_sender_used[MAX_SIZE];
 
 static void free_uist(struct uist_ctx *uist_ctx)
 {
 	unsigned long flags;
 
-	free_kernel_object(uist_ctx -> uist);
-	uist_ctx->uist = NULL;
+	//free_kernel_object(uist_ctx -> uist);
+	uist_used[(int) ((uist_ctx -> uist) - uist_pool)] = false;
+	uist_ctx -> uist = NULL;
 
-	free_kernel_object(uist_ctx);
+	//free_kernel_object(uist_ctx);
+	uist_ctx_used[(int)(uist_ctx - uist_ctx_pool)] = false;
 }
 
 static struct uist_ctx *alloc_uist(void)
@@ -25,7 +27,7 @@ static struct uist_ctx *alloc_uist(void)
 	struct uist_entry *uist = NULL;
 
 	//uist_ctx = alloc_kernel_object(sizeof(*uist_ctx));
-	for(int i = 0; i < MAX_SIZE;i ++) {
+	for(int i = 0; i < MAX_SIZE; i ++) {
 		if(! uist_ctx_used[i]) {
 			uist_ctx_used[i] = true;
 			uist_ctx = &uist_ctx_pool[i];
@@ -37,9 +39,9 @@ static struct uist_ctx *alloc_uist(void)
 
 	//uist = alloc_kernel_object(sizeof(*uist) * UINTR_MAX_UIST_NR);
 	for(int i = 0; i < MAX_SIZE; i ++) {
-		if(! uist_used[i]) {
-			uist_used[i] = true;
-			uist = uist_pool[i];
+		if(! uist_entry_used[i]) {
+			uist_entry_used[i] = true;
+			uist = uist_entry_pool[i];
 		}
 	}
 	if (!uist) {
