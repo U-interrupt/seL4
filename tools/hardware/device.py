@@ -106,6 +106,8 @@ class WrappedNode:
         sizes = (self.parent.get_addr_cells(), self.parent.get_size_cells())
         for r in Utils.intarray_iter(prop, sizes):
             reg.append(Region(self.parent._translate_child_address(r[0]), r[1], self))
+        print(reg)
+        print("=====get_regions=====")
         return reg
 
     def parse_address(self, array) -> int:

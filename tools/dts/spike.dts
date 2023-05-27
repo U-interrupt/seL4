@@ -15,8 +15,12 @@
   #size-cells = <0x00000002>;
   compatible = "ucbbar,spike-bare-dev";
   model = "ucbbar,spike-bare,qemu";
+  aliases {
+    uintc = "/uintc@2f10000";
+  };
   chosen {
     bootargs = "";
+    seL4,kernel-devices = "uintc";
   };
   cpus {
     #address-cells = <0x00000001>;
@@ -57,5 +61,6 @@
     reg = <0x00 0x2f10000 0x00 0x4000>;
     interrupt-controller;
     compatible = "riscv,uintc0";
+    user_ok;
   };
 };

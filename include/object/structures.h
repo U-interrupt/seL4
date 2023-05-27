@@ -17,45 +17,6 @@
 #include <benchmark/benchmark_utilisation_.h>
 #include <arch/uintr.h>
 
-/* User Interrupt Sender Status Table Entry (UISTE) */
-struct uist_entry {
-	uint8_t valid;
-	uint8_t reserved0;
-	uint16_t send_vec;
-	uint16_t reserved1;
-	uint16_t uirs_index;
-};
-
-/* User Interrupt Receiver Status Table Entry (UIRSE) */
-struct uirs_entry {
-	uint8_t mode;
-	uint8_t reserved0;
-	uint16_t hartid;
-	uint32_t reserved1;
-	uint64_t irq;
-};
-
-struct uintr_receiver {
-	struct uirs_entry *uirs;  //address of UINTC    
-	uint16_t uirs_index;
-	/* trace active vector per bit */
-	uint64_t uvec_mask;
-};
-
-/* User Interrupt Sender Status Table Context */
-struct uist_ctx {
-	struct uist_entry *uist;
-
-    int refs;
-};
-
-/* User Interrupt Sender */
-struct uintr_sender {
-	struct uist_ctx *uist_ctx;
-	/* track active uist entries per bit */
-	uint64_t uist_mask[4];  // total 256 bits
-};
-
 enum irq_state {
     IRQInactive  = 0,
     IRQSignal    = 1,

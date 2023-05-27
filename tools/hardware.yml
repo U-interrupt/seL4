@@ -217,3 +217,12 @@ devices:
       - fsl,imx6sx-src
   - compatible:
       - xlnx,zynq-reset
+
+  # UINTC
+  - compatible:
+      - riscv,uintc0
+    regions:
+      - index: 0
+        kernel: UINTC_PPTR
+        kernel_size: 0x4000
+        user: true

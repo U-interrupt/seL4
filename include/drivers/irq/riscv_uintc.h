@@ -33,6 +33,8 @@
 #define IRQ_U_SOFT          0x0
 #define IE_USIE		((0x1ul) << IRQ_U_SOFT)
 
+#define __ASM_STR(x)	#x
+
 #define csr_read(csr)						\
 ({								\
 	register unsigned long __v;				\

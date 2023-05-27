@@ -2,40 +2,42 @@
 #include <drivers/irq/riscv_uintc.h>
 #include <api/syscall.h>
 
-const int MAX_SIZE = 16;
-const int UINTC_MAX_NR = 512;
+#define MAX_SIZE 16
+#define UINTC_MAX_NR 512
+#define ENOMEM 12
 
-uist_ctx uist_ctx_pool[MAX_SIZE];
-uist_entry uist_entry_pool[MAX_SIZE][UINTR_MAX_UIST_NR];
-uintr_sender uintr_sender_pool[MAX_SIZE];
-bool uist_ctx_used[MAX_SIZE];
-bool uist_entry_used[MAX_SIZE];
-bool uintr_sender_used[MAX_SIZE];
-bool uintc_used[UINTC_MAX_NR];
+uist_ctx_t uist_ctx_pool[MAX_SIZE];
+uist_entry_t uist_entry_pool[MAX_SIZE][UINTR_MAX_UIST_NR];
+uintr_sender_t uintr_sender_pool[MAX_SIZE];
+uintr_receiver_t uintr_recv_pool[MAX_SIZE];
+char uist_ctx_used[MAX_SIZE];
+char uist_entry_used[MAX_SIZE];
+char uintr_sender_used[MAX_SIZE];
+char uintc_used[UINTC_MAX_NR];
+char uintr_recv_used[MAX_SIZE];
 word_t buffer_for_args[32];
 
-static void free_uist(struct uist_ctx *uist_ctx)
+static void free_uist(uist_ctx_t *uist_ctx)
 {
-	unsigned long flags;
-
 	//free_kernel_object(uist_ctx -> uist);
-	uist_used[(int) ((uist_ctx -> uist) - uist_pool)] = false;
+	uist_ctx_used[uist_ctx -> uist_entry_idx] = 0;
 	uist_ctx -> uist = NULL;
 
 	//free_kernel_object(uist_ctx);
-	uist_ctx_used[(int)(uist_ctx - uist_ctx_pool)] = false;
+	uist_ctx_used[(int)(uist_ctx - uist_ctx_pool)] = 0;
 }
 
-static struct uist_ctx *alloc_uist(void)
+static uist_ctx_t *alloc_uist(void)
 {
-	struct uist_ctx *uist_ctx = NULL;
-	struct uist_entry *uist = NULL;
+	uist_ctx_t *uist_ctx = NULL;
+	uist_entry_t *uist = NULL;
 
 	//uist_ctx = alloc_kernel_object(sizeof(*uist_ctx));
 	for(int i = 0; i < MAX_SIZE; i ++) {
 		if(! uist_ctx_used[i]) {
-			uist_ctx_used[i] = true;
+			uist_ctx_used[i] = 1;
 			uist_ctx = &uist_ctx_pool[i];
+			uist_ctx -> uist_entry_idx = i;
 			break;
 		}
 	}
@@ -45,13 +47,13 @@ static struct uist_ctx *alloc_uist(void)
 	//uist = alloc_kernel_object(sizeof(*uist) * UINTR_MAX_UIST_NR);
 	for(int i = 0; i < MAX_SIZE; i ++) {
 		if(! uist_entry_used[i]) {
-			uist_entry_used[i] = true;
+			uist_entry_used[i] = 1;
 			uist = uist_entry_pool[i];
 		}
 	}
 	if (!uist) {
 		//free_kernel_object(uist_ctx);
-		uist_ctx_used[(int)(uist_ctx - uist_ctx_pool)] = false;
+		uist_ctx_used[(int)(uist_ctx - uist_ctx_pool)] = 0;
 		return NULL;
 	}
 
@@ -61,21 +63,21 @@ static struct uist_ctx *alloc_uist(void)
 	return uist_ctx;
 }
 
-static void put_uist_ref(struct uist_ctx *uist_ctx)
+[[maybe_unused]] static void put_uist_ref(struct uist_ctx *uist_ctx)
 {
-	if ( (-- uist_ctx -> ref) == 0)
+	if ( (-- uist_ctx -> refs) == 0)
 		free_uist(uist_ctx);
 }
 
-static struct uist_ctx *get_uist_ref(struct uist_ctx *uist_ctx)
+[[maybe_unused]] static struct uist_ctx *get_uist_ref(struct uist_ctx *uist_ctx)
 {
-	++ uist_ctx -> ref;
+	++ uist_ctx -> refs;
 	return uist_ctx;
 }
 
 static int init_sender(void)
 {
-	// struct task_struct *t = current;
+	tcb_t *tcb = NODE_STATE(ksCurThread);
 	struct uintr_sender *ui_send = NULL;
 
 	//ui_send = alloc_kernel_object(sizeof(*ui_send));
@@ -94,11 +96,12 @@ static int init_sender(void)
 	if (!ui_send->uist_ctx) {
 		puts("Failed to allocate user-interrupt sender table\n");
 		//free_kernel_object(ui_send);
-		uintr_sender_used[(int)(ui_send - uintr_sender)] = false;
+		uintr_sender_used[(int)(ui_send - uintr_sender_pool)] = false;
 
 		return -ENOMEM;
 	}
 
+	tcb -> ui_send = ui_send;
 	return 0;
 }
 
@@ -135,9 +138,9 @@ static int syscall_register_receiver(void) {
 		return -1;
 	}
 	for(int i = 0; i < MAX_SIZE; i ++) {
-		if(! uintr_sender_used[i]) {
-			uintr_sender_used[i] = true;
-			tcb -> ui_recv = &uintr_sender_pool[i];
+		if(! uintr_recv_used[i]) {
+			uintr_recv_used[i] = true;
+			tcb -> ui_recv = &uintr_recv_pool[i];
 			break;
 		}
 	}
@@ -161,7 +164,6 @@ static int syscall_register_receiver(void) {
 	uintc_write_low(uintc_idx, 0LL);
 	uintc_write_high(uintc_idx, 0LL);
 	tcb -> ui_recv -> uirs_index = uintc_idx;
-	tcb -> ui_recv -> uist_ctx = alloc_uist();
 	tcb -> utvec = csr_read(CSR_UTVEC) & 0xFFFFFFFFFFFFFFF8; //direct mode
 	tcb -> uscratch = csr_read(CSR_USCRATCH);
 	return 0;
@@ -174,17 +176,7 @@ static int syscall_register_sender(void) {
 	int sender_idx = -1;
 	if(tcb -> ui_send == NULL) {
 		//Init sender
-		for(int i = 0; i < MAX_SIZE; i ++) {
-			if(! uintr_sender_used[i]) {
-				uintr_sender_used[i] = true;
-				tcb -> ui_send = &uintr_sender_pool[i];
-				break;
-			}
-		}
-		if(! tcb -> ui_send) {
-			puts("Failed to allocate user-interrupt sender table\n");
-			return -ENOMEM;
-		}
+		init_sender();
 	}
 	for(int i = 0; i < UINTR_MAX_UIST_NR; i ++) {
 		int idx = i / 64;
@@ -199,13 +191,13 @@ static int syscall_register_sender(void) {
 		puts("Failed to allocate user-interrupt sender table\n");
 		return -ENOMEM;
 	}
-	tcb -> ui_send -> uist -> uirs[sender_idx].send_vec = vec;
-	tcb -> ui_send -> uist -> uirs[sender_idx].uirs_index = receiver_idx;
-	tcb -> ui_send -> uist -> uirs[sender_idx].valid = 0x1;
+	tcb -> ui_send -> uist_ctx -> uist[sender_idx].send_vec = vec;
+	tcb -> ui_send -> uist_ctx -> uist[sender_idx].uirs_index = receiver_idx;
+	tcb -> ui_send -> uist_ctx -> uist[sender_idx].valid = 0x1;
 	return 0;
 } 
 
-void uirs_restore() {
+static void uirs_restore(void) {
 	csr_set(CSR_SIDELEG, IE_USIE);
 
 	tcb_t *tcb = NODE_STATE(ksCurThread);
@@ -216,9 +208,9 @@ void uirs_restore() {
 		return;
 	}
 
-	uirs_entry uirs;
+	uirs_entry_t uirs;
 	load_uirs(tcb -> ui_recv -> uirs_index, &uirs);
-	uirs.hartid = getCurrentCPUIndex();
+	uirs.hartid = 0; //getCurrentCPUIndex(); #TODO: SMP support
 	uirs.mode = 0x2;
 	store_uirs(tcb -> ui_recv -> uirs_index, &uirs);
 	csr_write(CSR_SUIRS, (1UL << 63) | tcb -> ui_recv -> uirs_index);
@@ -235,7 +227,7 @@ void uirs_restore() {
 	csr_write(CSR_UEPC, tcb -> uepc);
 }
 
-void uist_init() {
+static void uist_init(void) {
 	tcb_t *tcb = NODE_STATE(ksCurThread);
 	if(tcb -> ui_send == NULL) {
 		csr_write(CSR_SUIST, 0UL);
@@ -245,7 +237,7 @@ void uist_init() {
 }
 
 /// Called during trap return.
-void uintr_return() {
+static void uintr_return(void) {
 	csr_write(CSR_SUICFG, UINTC_PPTR_BASE);
 	//receiver
 	uirs_restore();
@@ -254,6 +246,7 @@ void uintr_return() {
 }
 
 /// Called when task traps into kernel.
-void uintr_save() {
+[[maybe_unused]] void uintr_save(void) {
+	tcb_t *tcb = NODE_STATE(ksCurThread);
 	tcb -> uepc = csr_read(CSR_UEPC);
 }
