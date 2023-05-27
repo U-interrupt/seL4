@@ -17,9 +17,6 @@
 #include <benchmark/benchmark_utilisation_.h>
 #include <arch/uintr.h>
 
-#ifdef ENABLE_UINTR
-
-
 /* User Interrupt Sender Status Table Entry (UISTE) */
 struct uist_entry {
 	uint8_t valid;
@@ -56,10 +53,8 @@ struct uist_ctx {
 struct uintr_sender {
 	struct uist_ctx *uist_ctx;
 	/* track active uist entries per bit */
-	uint64_t uist_mask[32];  // total 2048 bits
+	uint64_t uist_mask[4];  // total 256 bits
 };
-
-#endif //ENABLE_UINTR
 
 enum irq_state {
     IRQInactive  = 0,
@@ -350,10 +345,10 @@ struct tcb {
     benchmark_util_t benchmark;
 #endif
 
-#ifdef ENABLE_UINTR
     struct uintr_sender *ui_send;
 	struct uintr_receiver *ui_recv;
-#endif
+    unsigned long long uepc, utvec, uscratch;
+    
 };
 typedef struct tcb tcb_t;
 

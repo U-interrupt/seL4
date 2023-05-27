@@ -22,6 +22,7 @@
 .extern c_handle_fastpath_call
 .extern c_handle_interrupt
 .extern c_handle_exception
+.extern uintr_save
 
 trap_entry:
 
@@ -95,6 +96,8 @@ trap_entry:
   /* Load kernel's stack address */
   la sp, (kernel_stack_alloc + BIT(CONFIG_KERNEL_STACK_BITS))
 #endif
+
+  call uintr_save
 
   /* Save exception PC */
   csrr x1,  sepc

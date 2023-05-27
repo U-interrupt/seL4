@@ -24,6 +24,7 @@
 #include <string.h>
 #include <kernel/traps.h>
 #include <arch/machine.h>
+#include <arch/uintr.h>
 #ifdef ENABLE_SMP_SUPPORT
 #include <smp/ipi.h>
 #endif
@@ -616,6 +617,18 @@ exception_t handleSyscall(syscall_t syscall)
 
         case SysYield:
             handleYield();
+            break;
+
+        case SysUintrCreateCap:
+
+            break;
+
+        case SysUintrRegisterRecevier:
+            ret = syscall_register_receiver();
+            break;
+
+        case SysUintrRegisterSender:
+            ret = syscall_register_sender();
             break;
 
         default:

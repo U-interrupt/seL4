@@ -14,6 +14,7 @@
 #include <util.h>
 #include <arch/machine/hardware.h>
 #include <machine/fpu.h>
+#include <arch/uintr.h>
 
 #include <benchmark/benchmark_track.h>
 #include <benchmark/benchmark_utilisation.h>
@@ -37,6 +38,8 @@ void VISIBLE NORETURN restore_user_context(void)
     lazyFPURestore(NODE_STATE(ksCurThread));
     set_tcb_fs_state(NODE_STATE(ksCurThread), isFpuEnable());
 #endif
+
+    uintr_return();
 
     asm volatile(
         "mv t0, %[cur_thread]       \n"

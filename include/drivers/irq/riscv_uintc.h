@@ -28,6 +28,11 @@
 #define CSR_SUIRS           0x1b1
 #define CSR_SUICFG          0x1b2
 
+/* S Mode CSR*/
+#define CSR_SIDELEG         0x103
+#define IRQ_U_SOFT          0x0
+#define IE_USIE		((0x1ul) << IRQ_U_SOFT)
+
 #define csr_read(csr)						\
 ({								\
 	register unsigned long __v;				\
@@ -45,7 +50,23 @@
 			      : "memory");			\
 })
 
-#define UINTC_PPTR_BASE 0  // #TODO: UINTC_PPTR
+#define csr_set(csr, val)					\
+({								\
+	unsigned long __v = (unsigned long)(val);		\
+	__asm__ __volatile__ ("csrs " __ASM_STR(csr) ", %0"	\
+			      : : "rK" (__v)			\
+			      : "memory");			\
+})
+
+#define csr_clear(csr, val)					\
+({								\
+	unsigned long __v = (unsigned long)(val);		\
+	__asm__ __volatile__ ("csrc " __ASM_STR(csr) ", %0"	\
+			      : : "rK" (__v)			\
+			      : "memory");			\
+})
+
+#define UINTC_PPTR_BASE UINTC_PPTR  // #TODO: UINTC_PPTR
 
 static inline uint32_t readl(word_t addr) {
     return *((volatile uint32_t *)(addr));
@@ -100,8 +121,4 @@ static inline word_t uintc_get_current_hart_id(void)
     return SMP_TERNARY(
                cpuIndexToID(getCurrentCPUIndex()),
                CONFIG_FIRST_HART_ID);
-}
-
-static void uintc_init() {
-    csr_write(CSR_SUICFG, UINTC_PPTR_BASE);
 }

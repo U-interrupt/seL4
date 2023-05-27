@@ -52,4 +52,10 @@
   htif {
     compatible = "ucb,htif0";
   };
+  uintc@2f10000 {
+    interrupts-extended = <0x08 0x00 0x06 0x00 0x04 0x00 0x02 0x00>;
+    reg = <0x00 0x2f10000 0x00 0x4000>;
+    interrupt-controller;
+    compatible = "riscv,uintc0";
+  };
 };
