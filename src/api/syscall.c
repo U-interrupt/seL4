@@ -625,6 +625,7 @@ exception_t handleSyscall(syscall_t syscall)
 
         case SysUintrRegisterRecevier:
             ret = syscall_register_receiver();
+            printf("ret in syscal = %ld, EXCEPTION_NONE = %d\n", ret, EXCEPTION_NONE);
             break;
 
         case SysUintrRegisterSender:

@@ -145,10 +145,12 @@ def get_kernel_devices(tree: FdtParser, hw_yaml: HardwareYaml) -> (List, Dict):
 
     kernel_offset = 0
     groups = []
+    print("==========Begin===========")
     for dev in kernel_devices:
         dev_rule = hw_yaml.get_rule(dev)
         new_regions = dev_rule.get_regions(dev)
         for reg in new_regions:
+            print(reg)
             if reg in groups:
                 other = groups[groups.index(reg)]
                 other.take_labels(reg)
@@ -159,6 +161,7 @@ def get_kernel_devices(tree: FdtParser, hw_yaml: HardwareYaml) -> (List, Dict):
     for group in groups:
         kernel_offset = group.set_kernel_offset(kernel_offset)
         offsets.update(group.get_labelled_addresses())
+    print("=========End============")
     return (groups, offsets)
 
 

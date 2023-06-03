@@ -47,6 +47,8 @@ class KernelRegionGroup:
 
         region.size = min(max_size, region.size)
         aligned = region.align_size(page_bits)
+        print(page_bits)
+        print(aligned)
         self.size = aligned.size
         self.base = aligned.base
         self.regions = aligned.make_chunks(1 << page_bits)

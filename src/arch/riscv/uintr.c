@@ -7,7 +7,7 @@
 #define ENOMEM 12
 
 uist_ctx_t uist_ctx_pool[MAX_SIZE];
-uist_entry_t uist_entry_pool[MAX_SIZE][UINTR_MAX_UIST_NR];
+uist_entry_t uist_entry_pool[MAX_SIZE][UINTR_MAX_UIST_NR] __attribute__((aligned(0x1000)));
 uintr_sender_t uintr_sender_pool[MAX_SIZE];
 uintr_receiver_t uintr_recv_pool[MAX_SIZE];
 char uist_ctx_used[MAX_SIZE];
@@ -49,6 +49,8 @@ static uist_ctx_t *alloc_uist(void)
 		if(! uist_entry_used[i]) {
 			uist_entry_used[i] = 1;
 			uist = uist_entry_pool[i];
+			printf("Alloc Uist entry: i = %d, %lx\n", i, (unsigned long) uist);
+			break;
 		}
 	}
 	if (!uist) {
@@ -77,6 +79,7 @@ static uist_ctx_t *alloc_uist(void)
 
 static int init_sender(void)
 {
+	printf("init_sender\n");
 	tcb_t *tcb = NODE_STATE(ksCurThread);
 	struct uintr_sender *ui_send = NULL;
 
@@ -118,6 +121,7 @@ static void load_uirs(unsigned int entry, struct uirs_entry *uirs)
 
 	/* reserved bits ignored */
 	uirs->reserved0 = uirs->reserved1 = 0;
+	// printf("loaded uirs(%lx): entry = %d, mode = %d\n", (unsigned long) uirs, entry, uirs -> mode);
 }
 
 static void store_uirs(unsigned entry, struct uirs_entry *uirs)
@@ -129,6 +133,7 @@ static void store_uirs(unsigned entry, struct uirs_entry *uirs)
 
 	uintc_write_low(entry, low);
 	uintc_write_high(entry, high);
+	// printf("stored uirs(%lx): entry = %d, mode = %d\n", (unsigned long) uirs, entry, uirs -> mode);
 }
 
 static int syscall_register_receiver(void) {
@@ -166,12 +171,14 @@ static int syscall_register_receiver(void) {
 	tcb -> ui_recv -> uirs_index = uintc_idx;
 	tcb -> utvec = csr_read(CSR_UTVEC) & 0xFFFFFFFFFFFFFFF8; //direct mode
 	tcb -> uscratch = csr_read(CSR_USCRATCH);
+	puts("Syscall register receiver Done!");
+	setRegister(tcb, a0, uintc_idx); // return uintc_idx
 	return 0;
 }
 
 static int syscall_register_sender(void) {
-	word_t receiver_idx = getSyscallArg(0, buffer_for_args);
-	word_t vec = getSyscallArg(1, buffer_for_args);
+	word_t receiver_idx = getRegister(NODE_STATE(ksCurThread), a0);
+	word_t vec = getRegister(NODE_STATE(ksCurThread), a1);
 	tcb_t *tcb = NODE_STATE(ksCurThread);
 	int sender_idx = -1;
 	if(tcb -> ui_send == NULL) {
@@ -194,6 +201,8 @@ static int syscall_register_sender(void) {
 	tcb -> ui_send -> uist_ctx -> uist[sender_idx].send_vec = vec;
 	tcb -> ui_send -> uist_ctx -> uist[sender_idx].uirs_index = receiver_idx;
 	tcb -> ui_send -> uist_ctx -> uist[sender_idx].valid = 0x1;
+	printf("Syscall register sender: receiver_idx = %ld, vec = %ld,  sender_idx = %d\n", receiver_idx, vec, sender_idx);
+	setRegister(tcb, a0, sender_idx); // return sender_idx 
 	return 0;
 } 
 
@@ -211,7 +220,7 @@ static void uirs_restore(void) {
 	uirs_entry_t uirs;
 	load_uirs(tcb -> ui_recv -> uirs_index, &uirs);
 	uirs.hartid = 0; //getCurrentCPUIndex(); #TODO: SMP support
-	uirs.mode = 0x2;
+	uirs.mode |= 0x2;
 	store_uirs(tcb -> ui_recv -> uirs_index, &uirs);
 	csr_write(CSR_SUIRS, (1UL << 63) | tcb -> ui_recv -> uirs_index);
 
@@ -225,6 +234,7 @@ static void uirs_restore(void) {
 	csr_write(CSR_UTVEC, tcb -> utvec);
 	csr_write(CSR_USCRATCH, tcb -> uscratch);
 	csr_write(CSR_UEPC, tcb -> uepc);
+	// puts("UIRS RESTORE DONE!");
 }
 
 static void uist_init(void) {
@@ -233,12 +243,13 @@ static void uist_init(void) {
 		csr_write(CSR_SUIST, 0UL);
 		return;
 	}
-	csr_write(CSR_SUIST, (1UL << 63) | (1UL << 44) | kpptr_to_paddr(tcb -> ui_send -> uist_ctx -> uist));
+	// printf("UIST INIT: uist = %lx\n", (unsigned long) tcb -> ui_send -> uist_ctx -> uist);
+	csr_write(CSR_SUIST, (1UL << 63) | (1UL << 44) | (kpptr_to_paddr(tcb -> ui_send -> uist_ctx -> uist) >> 0xC));
 }
 
 /// Called during trap return.
 static void uintr_return(void) {
-	csr_write(CSR_SUICFG, UINTC_PPTR_BASE);
+	csr_write(CSR_SUICFG, 0x2f10000);
 	//receiver
 	uirs_restore();
 	//sender

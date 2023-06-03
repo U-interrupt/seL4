@@ -48,6 +48,7 @@ class FdtParser:
             # if an interrupt controller has no phandle, it isn't used anywhere
             # and so we can safely ignore it.
             if wrapped.has_prop('interrupt-controller') or wrapped.has_prop('interrupt-map'):
+                print(wrapped)
                 self.irq_controllers[wrapped.get_phandle()] = create_irq_controller(wrapped, self)
 
     def get_phandle(self, phandle: int) -> WrappedNode:
@@ -91,6 +92,7 @@ class FdtParser:
         for path in paths:
             if path[0] != '/':
                 path = self.lookup_alias(path)
+            print(path)
             ret.append(self.get_path(path))
         return ret
 

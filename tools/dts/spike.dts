@@ -61,6 +61,5 @@
     reg = <0x00 0x2f10000 0x00 0x4000>;
     interrupt-controller;
     compatible = "riscv,uintc0";
-    user_ok;
   };
 };

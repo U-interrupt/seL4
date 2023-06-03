@@ -3,7 +3,7 @@
 #include <config.h>
 #include <util.h>
 
-#define UINTR_MAX_UIST_NR 256
+#define UINTR_MAX_UIST_NR 4096
 
 #ifndef __ASSEMBLER__
 

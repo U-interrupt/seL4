@@ -38,6 +38,7 @@ BOOT_CODE void map_kernel_devices(void)
     for (int i = 0; i < NUM_KERNEL_DEVICE_FRAMES; i++) {
         const kernel_frame_t *frame = &kernel_device_frames[i];
         map_kernel_frame(frame->paddr, frame->pptr, VMKernelOnly);
+        printf("Mapping Kernel Device paddr: %lx, pptr: %lx\n", frame->paddr, frame->pptr);
         if (!frame->userAvailable) {
             reserve_region((p_region_t) {
                 .start = frame->paddr,
