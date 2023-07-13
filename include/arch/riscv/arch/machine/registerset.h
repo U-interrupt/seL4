@@ -68,6 +68,11 @@ enum _register {
     NextIP = 34,
 
     /* TODO: add other user-level CSRs if needed (i.e. to avoid channels) */
+#ifdef CONFIG_RISCV_UINTR
+    UEPC = 35,
+    UTVEC = 36,
+    USCRATCH = 37,
+#endif
 
     n_contextRegisters
 };

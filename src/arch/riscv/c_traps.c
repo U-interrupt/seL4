@@ -18,6 +18,8 @@
 #include <benchmark/benchmark_track.h>
 #include <benchmark/benchmark_utilisation.h>
 
+#include <arch/uintr.h>
+
 /** DONT_TRANSLATE */
 void VISIBLE NORETURN restore_user_context(void)
 {
@@ -36,6 +38,10 @@ void VISIBLE NORETURN restore_user_context(void)
 #ifdef CONFIG_HAVE_FPU
     lazyFPURestore(NODE_STATE(ksCurThread));
     set_tcb_fs_state(NODE_STATE(ksCurThread), isFpuEnable());
+#endif
+
+#ifdef CONFIG_RISCV_UINTR
+    uintr_restore(NODE_STATE(ksCurThread));
 #endif
 
     asm volatile(

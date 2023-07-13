@@ -96,9 +96,19 @@ trap_entry:
   la sp, (kernel_stack_alloc + BIT(CONFIG_KERNEL_STACK_BITS))
 #endif
 
+#ifdef CONFIG_RISCV_UINTR
+  csrr x1, uepc
+  STORE x1, (35*REGBYTES)(t0)
+  csrr x1, utvec
+  STORE x1, (36*REGBYTES)(t0)
+  csrr x1, uscratch
+  STORE x1, (37*REGBYTES)(t0)
+#endif
+
   /* Save exception PC */
   csrr x1,  sepc
   STORE   x1, (33*REGBYTES)(t0)
+
 
   /* Check if it's an interrupt */
   bltz s0, interrupt

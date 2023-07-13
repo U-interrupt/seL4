@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "sel4/shared_types_gen.h"
 #include <sel4/config.h>
 #include <sel4/functions.h>
 #include <sel4/sel4_arch/syscalls.h>
@@ -20,6 +21,43 @@
 #define MCS_PARAM_DECL(r)
 #define MCS_PARAM
 #define LIBSEL4_MCS_REPLY 0
+#endif
+
+#ifdef CONFIG_RISCV_UINTR
+#define uipi_send(index)                                                   \
+	({                                                                       \
+		unsigned long __i = (unsigned long)(index);                            \
+		__asm__ __volatile__(".insn r 0b1111011, 0b110, 0b0000000, x0, %0, x0" \
+												 :                                                 \
+												 : "r"(__i)                                        \
+												 : "memory");                                      \
+	})
+
+#define uipi_read()                                                        \
+	({                                                                       \
+		unsigned long __v;                                                     \
+		__asm__ __volatile__(".insn r 0b1111011, 0b110, 0b0000001, %0, x0, x0" \
+												 : "=r"(__v)                                       \
+												 :                                                 \
+												 : "memory");                                      \
+		__v;                                                                   \
+	})
+
+#define uipi_write(bits)                                                   \
+	({                                                                       \
+		unsigned long __v = (unsigned long)(bits);                             \
+		__asm__ __volatile__(".insn r 0b1111011, 0b110, 0b0000010, x0, %0, x0" \
+												 :                                                 \
+												 : "r"(__v)                                        \
+												 : "memory");                                      \
+	})
+
+#define uipi_activate() \
+	({ __asm__ __volatile__(".insn r 0b1111011, 0b110, 0b0000011, x0, x0, x0"); })
+
+#define uipi_deactivate() \
+	({ __asm__ __volatile__(".insn r 0b1111011, 0b110, 0b0000100, x0, x0, x0"); })
+
 #endif
 
 static inline void riscv_sys_send(seL4_Word sys, seL4_Word dest, seL4_Word info_arg, seL4_Word mr0, seL4_Word mr1,
@@ -250,7 +288,11 @@ LIBSEL4_INLINE_FUNC void seL4_ReplyWithMRs(seL4_MessageInfo_t msgInfo,
 
 LIBSEL4_INLINE_FUNC void seL4_Signal(seL4_CPtr dest)
 {
+#ifdef CONFIG_RISCV_UINTR
+    uipi_send(dest);
+#else
     riscv_sys_send_null(seL4_SysSend, dest, seL4_MessageInfo_new(0, 0, 0, 0).words[0]);
+#endif
 }
 
 #ifdef CONFIG_KERNEL_MCS
@@ -378,6 +420,10 @@ LIBSEL4_INLINE_FUNC seL4_MessageInfo_t seL4_Poll(seL4_CPtr src, seL4_Word *sende
 {
 #ifdef CONFIG_KERNEL_MCS
     return seL4_NBWait(src, sender);
+#elif CONFIG_RISCV_UINTR
+    seL4_MessageInfo_t info = {{0}};
+    *sender = uipi_read();
+    return info;
 #else
     return seL4_NBRecv(src, sender);
 #endif

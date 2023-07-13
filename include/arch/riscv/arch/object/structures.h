@@ -33,8 +33,44 @@ typedef struct asid_pool asid_pool_t;
 #define ASID_LOW(a)         (a & MASK(asidLowBits))
 #define ASID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
 
+#ifdef CONFIG_RISCV_UINTR
+/* User Interrupt Sender Status Table Entry (UISTE) */
+struct uist_entry {
+	uint8_t valid;
+	uint8_t reserved0;
+	uint16_t send_vec;
+	uint16_t reserved1;
+	uint16_t uirs_index;
+};
+typedef struct uist_entry uist_entry_t;
+
+/* User Interrupt Receiver Status Table Entry (UIRSE) */
+struct uirs_entry {
+	uint8_t mode;
+	uint8_t reserved0;
+	uint16_t hartid;
+	uint32_t reserved1;
+	uint64_t irq;
+};
+typedef struct uirs_entry uirs_entry_t;
+
+/* User Interrupt Receiver Status Index */
+typedef uint16_t ui_recv_t;
+
+/* User Interrupt Sender Table */
+struct uist {
+    uist_entry_t *data;
+};
+
+typedef struct uist ui_send_t;
+#endif
+
 typedef struct arch_tcb {
     user_context_t tcbContext;
+#ifdef CONFIG_RISCV_UINTR
+    ui_send_t tcbUISend;
+    ui_recv_t tcbUIRecv;
+#endif
 } arch_tcb_t;
 
 enum vm_rights {

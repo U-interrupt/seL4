@@ -184,6 +184,24 @@ exception_t decodeCNodeInvocation(word_t invLabel, word_t length, cap_t cap,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
+#ifdef CONFIG_RISCV_UINTR
+        uint64_t send_badge;
+        notification_t *recv_ntfn = NULL;
+        tcb_t *recv_tcb = NULL;
+        ui_recv_t uintc_index;
+        if (cap_get_capType(srcSlot->cap) == cap_notification_cap) {
+            send_badge = cap_notification_cap_get_capNtfnBadge(srcSlot->cap);
+            recv_ntfn = NTFN_PTR(cap_notification_cap_get_capNtfnPtr(srcSlot->cap));
+            if (recv_ntfn) {
+                recv_tcb = TCB_PTR(notification_ptr_get_ntfnBoundTCB(recv_ntfn));
+                if (recv_tcb) {
+                    uintc_index = recv_tcb->tcbArch.tcbUIRecv;
+                    alloc_uiste(NODE_STATE(ksCurThread), send_badge, uintc_index, index);
+                }
+            }
+        }
+#endif
+
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
         if (isMove) {
             return invokeCNodeMove(newCap, srcSlot, destSlot);

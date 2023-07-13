@@ -15,6 +15,6 @@
          *
          */
         seL4,kernel-devices =
-            &{/soc/plic@c000000};
+            &{/soc/plic@c000000}, &{/soc/uintc@2f10000};
     };
 };

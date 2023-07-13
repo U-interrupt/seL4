@@ -102,7 +102,7 @@ void sendIPC(bool_t blocking, bool_t do_call, word_t badge,
         }
         possibleSwitchTo(dest);
 #else
-        bool_t replyCanGrant = thread_state_ptr_get_blockingIPCCanGrant(&dest->tcbState);;
+        bool_t replyCanGrant = thread_state_ptr_get_blockingIPCCanGrant(&dest->tcbState);
 
         setThreadState(dest, ThreadState_Running);
         possibleSwitchTo(dest);

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "arch/uintr.h"
 #include <config.h>
 #include <util.h>
 #include <linker.h>
@@ -112,6 +113,10 @@ static inline void NORETURN FORCE_INLINE fastpath_restore(word_t badge, word_t m
 #ifdef CONFIG_HAVE_FPU
     lazyFPURestore(cur_thread);
     set_tcb_fs_state(cur_thread, isFpuEnable());
+#endif
+
+#ifdef CONFIG_RISCV_UINTR
+    uintr_restore(cur_thread);
 #endif
 
     register word_t badge_reg asm("a0") = badge;
