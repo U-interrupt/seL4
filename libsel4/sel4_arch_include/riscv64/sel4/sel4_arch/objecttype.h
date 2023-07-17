@@ -11,6 +11,9 @@
 
 typedef enum _mode_object {
     seL4_RISCV_Giga_Page = seL4_NonArchObjectTypeCount,
+#ifdef CONFIG_RISCV_UINTR
+    seL4_RISCV_UintrObject,
+#endif
 #if CONFIG_PT_LEVELS > 3
     seL4_RISCV_Tera_Page,
 #endif

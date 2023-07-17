@@ -26,6 +26,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <arch/smp/ipi_inline.h>
+#ifdef CONFIG_RISCV_UINTR
+#include <arch/object/uintr.h>
+#endif
 
 #define NULL_PRIO 0
 
@@ -882,6 +885,13 @@ exception_t decodeTCBInvocation(word_t invLabel, word_t length, cap_t cap,
     case TCBSetTLSBase:
         return decodeSetTLSBase(cap, length, buffer);
 
+#ifdef CONFIG_RISCV_UINTR
+    case TCBBindUintr:
+        return decodeBindUintr(cap);
+    case TCBUnbindUintr:
+        return decodeUnbindUintr(cap);
+#endif
+
     default:
         /* Haskell: "throw IllegalOperation" */
         userError("TCB: Illegal operation.");
@@ -1671,6 +1681,60 @@ exception_t decodeUnbindNotification(cap_t cap)
     return invokeTCB_NotificationControl(tcb, NULL);
 }
 
+#ifdef CONFIG_RISCV_UINTR
+
+exception_t decodeBindUintr(cap_t cap)
+{
+    uintr_t *uintrPtr;
+    tcb_t *tcb;
+    cap_t uintr_cap;
+
+    if (current_extra_caps.excaprefs[0] == NULL) {
+        userError("TCB BindUintr: Truncated message.");
+        current_syscall_error.type = seL4_TruncatedMessage;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    tcb = TCB_PTR(cap_thread_cap_get_capTCBPtr(cap));
+
+    if (tcb->tcbArch.tcbBoundUintr) {
+        userError("TCB BindUintr: TCB already has a bound uintr.");
+        current_syscall_error.type = seL4_IllegalOperation;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    uintr_cap = current_extra_caps.excaprefs[0]->cap;
+
+    if (cap_get_capType(uintr_cap) == cap_uintr_cap) {
+        uintrPtr = UINTR_PTR(cap_uintr_cap_get_capUintrPtr(uintr_cap));
+    } else {
+        userError("TCB BindUintr: Uintr is invalid.");
+        current_syscall_error.type = seL4_IllegalOperation;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+    return invokeTCB_UintrControl(tcb, uintrPtr);
+}
+
+exception_t decodeUnbindUintr(cap_t cap)
+{
+    tcb_t *tcb;
+
+    tcb = TCB_PTR(cap_thread_cap_get_capTCBPtr(cap));
+
+    if (!tcb->tcbArch.tcbBoundUintr) {
+        userError("TCB UnbindUintr: TCB already has no bound uintr.");
+        current_syscall_error.type = seL4_IllegalOperation;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+    return invokeTCB_UintrControl(tcb, NULL);
+}
+
+#endif
+
 /* The following functions sit in the preemption monad and implement the
  * preemptible, non-faulting bottom end of a TCB invocation. */
 exception_t invokeTCB_Suspend(tcb_t *thread)
@@ -2052,6 +2116,19 @@ exception_t invokeTCB_NotificationControl(tcb_t *tcb, notification_t *ntfnPtr)
 
     return EXCEPTION_NONE;
 }
+
+#ifdef CONFIG_RISCV_UINTR
+exception_t invokeTCB_UintrControl(tcb_t *tcb, uintr_t *uintrPtr)
+{
+    if (uintrPtr) {
+        bindUintr(tcb, uintrPtr);
+    } else {
+        unbindUintr(tcb);
+    }
+    
+    return EXCEPTION_NONE;
+}
+#endif
 
 #ifdef CONFIG_DEBUG_BUILD
 void setThreadName(tcb_t *tcb, const char *name)

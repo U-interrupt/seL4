@@ -30,6 +30,9 @@
 #ifdef CONFIG_DEBUG_BUILD
 #include <arch/machine/capdl.h>
 #endif
+#ifdef CONFIG_RISCV_UINTR
+#include <arch/object/uintr.h>
+#endif
 
 /* The haskell function 'handleEvent' is split into 'handleXXX' variants
  * for each event causing a kernel entry */
@@ -462,6 +465,22 @@ static void handleRecv(bool_t isBlocking)
         receiveSignal(NODE_STATE(ksCurThread), lu_ret.cap, isBlocking);
         break;
     }
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap: {
+        uintr_t *uintrPtr;
+        tcb_t *boundTCB;
+        uintrPtr = UINTR_PTR(cap_uintr_cap_get_capUintrPtr(lu_ret.cap));
+        boundTCB = TCB_PTR(uintr_ptr_get_uintrBoundTCB(uintrPtr));
+        if (unlikely(!boundTCB || boundTCB != NODE_STATE(ksCurThread))) {
+            current_lookup_fault = lookup_fault_missing_capability_new(0);
+            current_fault = seL4_Fault_CapFault_new(epCPtr, true);
+            handleFault(NODE_STATE(ksCurThread));
+            break;
+        }
+        receiveUintr(NODE_STATE(ksCurThread), lu_ret.cap);
+        break;
+    }
+#endif
     default:
         current_lookup_fault = lookup_fault_missing_capability_new(0);
         current_fault = seL4_Fault_CapFault_new(epCPtr, true);

@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "arch/uintr.h"
 #include <config.h>
 #include <util.h>
 #include <linker.h>
@@ -17,6 +16,9 @@
 #include <smp/lock.h>
 #include <arch/machine/hardware.h>
 #include <machine/fpu.h>
+#ifdef CONFIG_RISCV_UINTR
+#include <arch/object/uintr.h>
+#endif
 
 void slowpath(syscall_t syscall)
 NORETURN;

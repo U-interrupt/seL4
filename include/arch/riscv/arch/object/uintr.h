@@ -1,9 +1,11 @@
 #pragma once
 
-#include "arch/model/smp.h"
-#include <config.h>
-#include <util.h>
+#include "arch/object/structures_gen.h"
+#include <types.h>
 #include <drivers/irq/riscv_uintc.h>
+#include <object/structures.h>
+
+#ifdef CONFIG_RISCV_UINTR
 
 #ifndef __ASSEMBLER__
 
@@ -62,7 +64,6 @@
 #define IP_USIP   1 /* U-Mode software interrupt pending. */
 #define IE_USIE   1 /* U-Mode software interrupt enable. */
 
-#ifdef CONFIG_RISCV_UINTR
 static inline void load_uirs(int entry, uirs_entry_t *uirs)
 {
 	uint64_t low, high;
@@ -94,19 +95,21 @@ static inline void uintr_restore(tcb_t *tcb) {
 	csr_set(CSR_SIDELEG, IE_USIE);
 
     /* restore user-interrupt receiver status */
-    if (!tcb->tcbArch.tcbUIRecv) {
+    if (!tcb->tcbArch.tcbBoundUintr || !uintr_ptr_get_uintrIndex(tcb->tcbArch.tcbBoundUintr)) {
 		csr_write(CSR_SUIRS, 0UL);
 		csr_clear(CSR_UIE, IE_USIE);
 		csr_clear(CSR_UIP, IE_USIE);
     } else {
-		printf("%lu uirs restore\n", cpuIndexToID(getCurrentCPUIndex()));
         /* update uintc entry */
         uirs_entry_t uirs;
-        load_uirs(tcb->tcbArch.tcbUIRecv, &uirs);
+		uint64_t index;
+		index = uintr_ptr_get_uintrIndex(tcb->tcbArch.tcbBoundUintr);
+		// printf("%lu uirs restore %llu\n", cpuIndexToID(getCurrentCPUIndex()), index);
+        load_uirs(index, &uirs);
         uirs.hartid = SMP_TERNARY(cpuIndexToID(getCurrentCPUIndex()), CONFIG_FIRST_HART_ID);
         uirs.mode = 0x2;
-        store_uirs(tcb->tcbArch.tcbUIRecv, &uirs);
-	    csr_write(CSR_SUIRS, (1UL << 63) | tcb->tcbArch.tcbUIRecv);
+        store_uirs(index, &uirs);
+	    csr_write(CSR_SUIRS, (1UL << 63) | index);
 
         /* update notification */
 
@@ -117,19 +120,27 @@ static inline void uintr_restore(tcb_t *tcb) {
 		csr_write(CSR_UEPC, getRegister(tcb, UEPC));
     }
 
-	if (tcb->tcbArch.tcbUIRecv != 0 && tcb->tcbArch.tcbUISend.data != NULL) {
-		printf("FUCK!!!!!\n");
-	}
-
     /* restore user-interrupt sender status */
-    if (!tcb->tcbArch.tcbUISend.data) {
+    if (!tcb->tcbArch.tcbSenderTable) {
 		csr_write(CSR_SUIST, 0UL);
     } else {
-		printf("%lu uist restore 0x%lx\n", cpuIndexToID(getCurrentCPUIndex()), kpptr_to_paddr(tcb->tcbArch.tcbUISend.data));
-        csr_write(CSR_SUIST, (1UL << 63) | (1UL << 44) | (kpptr_to_paddr(tcb->tcbArch.tcbUISend.data) >> 0xC));
+		// printf("%lu uist restore 0x%lx\n", cpuIndexToID(getCurrentCPUIndex()), kpptr_to_paddr(tcb->tcbArch.tcbUISend.data));
+        csr_write(CSR_SUIST, (1UL << 63) | (1UL << 44) | (kpptr_to_paddr(tcb->tcbArch.tcbSenderTable) >> 0xC));
     }
 }
 
-#endif /* CONFIG_RISCV_UINTR */
+
+
+void bindUintr(tcb_t *tcb, uintr_t *uintrPtr);
+void unbindUintr(tcb_t *tcb);
+void unbindMaybeUintr(uintr_t *uintrPtr);
+
+void receiveUintr(tcb_t *tcb, cap_t cap);
+void cancelUintr(uintr_t *uintrPtr);
+
+int registerUintrSender(tcb_t *tcb, uintr_t *uintrPtr, cte_t *slot);
+word_t registerUintrReceiver(void);
 
 #endif
+
+#endif /* CONFIG_RISCV_UINTR */

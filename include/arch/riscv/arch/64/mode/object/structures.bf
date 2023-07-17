@@ -64,6 +64,34 @@ block asid_pool_cap {
     field_high  capASIDPool     37
 }
 
+#ifdef CONFIG_RISCV_UINTR
+
+-- Cap to user interrupt context
+
+block uintr_cap {
+    field capUintrBadge         6
+    field capUintrSendIndex     12
+    field_high capUintrSendBase 39
+    padding                     7
+
+    field capType               5
+    padding                     20
+    field_high capUintrPtr      39
+}
+
+-- Uintr (User-Interrupt): size = 16 bytes
+
+block uintr {
+    padding                     7
+    field state                 2
+    field uintrIndex            16
+    field_high uintrBoundTCB    39
+
+    field uintrPending          64
+}
+
+#endif
+
 -- NB: odd numbers are arch caps (see isArchCap())
 tagged_union cap capType {
     -- 5-bit tag caps
@@ -88,6 +116,9 @@ tagged_union cap capType {
     tag page_table_cap      3
     tag asid_control_cap    11
     tag asid_pool_cap       13
+#ifdef CONFIG_RISCV_UINTR
+    tag uintr_cap           15
+#endif
 }
 
 ---- Arch-independent object types

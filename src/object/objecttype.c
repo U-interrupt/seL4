@@ -553,6 +553,7 @@ cap_t createObject(object_t t, void *regionBase, word_t userSize, bool_t deviceM
     case seL4_NotificationObject:
         /** AUXUPD: "(True, ptr_retyp
               (Ptr (ptr_val \<acute>regionBase) :: notification_C ptr))" */
+        userError("create ntfn\n");
         return cap_notification_cap_new(0, true, true,
                                         NTFN_REF(regionBase));
 

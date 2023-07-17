@@ -12,6 +12,9 @@
 #include <arch/machine.h>
 #include <arch/model/statedata.h>
 #include <arch/object/objecttype.h>
+#ifdef CONFIG_RISCV_UINTR
+#include <arch/object/uintr.h>
+#endif
 
 deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 {
@@ -39,6 +42,9 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 
     case cap_asid_control_cap:
     case cap_asid_pool_cap:
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap:
+#endif
         ret.cap = cap;
         ret.status = EXCEPTION_NONE;
         return ret;
@@ -52,6 +58,14 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 
 cap_t CONST Arch_updateCapData(bool_t preserve, word_t data, cap_t cap)
 {
+    if (cap_get_capType(cap) == cap_uintr_cap) {
+        if (!preserve && cap_uintr_cap_get_capUintrBadge(cap) == 0) {
+            userError("uintr update badge\n");
+            return cap_uintr_cap_set_capUintrBadge(cap, data);
+        } else {
+            return cap_null_cap_new();
+        }
+    }
     return cap;
 }
 
@@ -111,6 +125,18 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
     case cap_asid_control_cap:
         break;
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap:
+        if (final) {
+            uintr_t *uintrPtr;
+            uintrPtr = UINTR_PTR(cap_uintr_cap_get_capUintrPtr(cap));
+            unbindMaybeUintr(uintrPtr);
+            cancelUintr(uintrPtr);
+        }
+        fc_ret.remainder = cap_null_cap_new();
+        fc_ret.cleanupInfo = cap_null_cap_new();
+        break;
+#endif
     }
     fc_ret.remainder = cap_null_cap_new();
     fc_ret.cleanupInfo = cap_null_cap_new();
@@ -149,8 +175,15 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
                    cap_asid_pool_cap_get_capASIDPool(cap_b);
         }
         break;
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap:
+        if (cap_get_capType(cap_b) == cap_uintr_cap) {
+            return cap_uintr_cap_get_capUintrPtr(cap_a) ==
+                   cap_uintr_cap_get_capUintrPtr(cap_b);
+        }
+        break;
+#endif
     }
-
     return false;
 }
 
@@ -184,6 +217,10 @@ word_t Arch_getObjectSize(word_t t)
 #if CONFIG_PT_LEVELS > 3
     case seL4_RISCV_Tera_Page:
         return seL4_TeraPageBits;
+#endif
+#ifdef CONFIG_RISCV_UINTR
+    case seL4_RISCV_UintrObject:
+        return seL4_UintrBits;
 #endif
     default:
         fail("Invalid object type");
@@ -277,7 +314,20 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                    0,                      /* capPTIsMapped      */
                    0                       /* capPTMappedAddress */
                );
-
+#ifdef CONFIG_RISCV_UINTR
+    case seL4_RISCV_UintrObject: {
+        userError("create uintr\n");
+        uintr_t *uintrPtr;
+        uintrPtr = UINTR_PTR(regionBase);
+        uintr_ptr_set_uintrIndex(uintrPtr, registerUintrReceiver());
+        return cap_uintr_cap_new(
+            0,                      /* capUintrBadge        */
+            0,                      /* capUintrSendIndex    */
+            0,                      /* capUintrSendBase     */
+            UINTR_REF(regionBase)   /* capUintrPtr          */
+        );
+    }
+#endif
     default:
         /*
          * This is a conflation of the haskell error: "Arch.createNewCaps
@@ -298,6 +348,32 @@ exception_t Arch_decodeInvocation(
     word_t *buffer
 )
 {
+    if (cap_get_capType(cap) == cap_uintr_cap) {
+        int index;
+        tcb_t *tcb;
+        uintr_t *uintrPtr;
+
+        assert(label == RISCVUintrRegisterSender);
+
+        tcb = TCB_PTR(NODE_STATE(ksCurThread));
+        if (!tcb->tcbArch.tcbBoundUintr) {
+            userError("RISCV Uintr RegisterSender: Uintr has not been bound.");
+            current_syscall_error.type = seL4_IllegalOperation;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+
+        uintrPtr = UINTR_PTR(cap_uintr_cap_get_capUintrPtr(cap));
+        if ((index = registerUintrSender(tcb, uintrPtr, slot)) == -1) {
+            userError("RISCV Uintr RegisterSender: No available space");
+            current_syscall_error.type = seL4_NotEnoughMemory;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+
+        setMR(tcb, buffer, 0, (word_t)index);
+        setThreadState(tcb, ThreadState_Restart);
+        return EXCEPTION_NONE;
+    }
+
     return decodeRISCVMMUInvocation(label, length, cptr, slot, cap, call, buffer);
 }
 

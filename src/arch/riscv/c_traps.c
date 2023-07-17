@@ -18,7 +18,9 @@
 #include <benchmark/benchmark_track.h>
 #include <benchmark/benchmark_utilisation.h>
 
-#include <arch/uintr.h>
+#ifdef CONFIG_RISCV_UINTR
+#include <arch/object/uintr.h>
+#endif
 
 /** DONT_TRANSLATE */
 void VISIBLE NORETURN restore_user_context(void)

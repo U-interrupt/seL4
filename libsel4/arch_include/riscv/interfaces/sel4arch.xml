@@ -368,4 +368,60 @@
 
     </interface>
 
+    <interface name="seL4_TCB" manual_name="TCB" cap_description="Capability to the TCB which is being operated on.">
+          <method id="TCBBindUintr" name="BindUintr" manual_name="Bind Uintr" manual_label="tcb_binduintr">
+            <brief>
+                Binds a uintr object to a <obj name="TCB"/>
+            </brief>
+            <param dir="in" name="uintr" type="seL4_CPtr" description="Uintr to bind."/>
+            <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> or <texttt text="uintr"/> is a CPtr to a capability of the wrong type.
+                    Or, <texttt text="_service"/> or <texttt text="uintr"/> is already bound.
+                </description>
+            </error>
+            <error name="seL4_InvalidCapability">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+        </method>
+
+        <method id="TCBUnbindUintr" name="UnbindUintr" manual_name="Unbind Uintr" manual_label="tcb_unbinduintr">
+            <brief>
+                Unbinds any uintr object from a <obj name="TCB"/>
+            </brief>
+            <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                    Or, <texttt text="_service"/> is not bound to a uintr.
+                </description>
+            </error>
+            <error name="seL4_InvalidCapability">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+        </method>
+     </interface>
+
+     <interface name="seL4_RISCV_Uintr" manual_name="Uintr" cap_description="Capability to the Uintr which being operated on.">
+        <method id="RISCVUintrRegisterSender" name="RegisterSender">
+            <brief>
+                Register a sender status entry to a Uintr
+            </brief>
+            <param dir="out" name="index" type="seL4_Word" description="The index of sender status entry."/>
+            <error name="seL4_InvalidCapability">
+                <description>
+                    The <texttt text="uintr"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+            <error name="seL4_NotEnoughMemory">
+                <description>
+                    The sender status table is out of memory.
+                </description>
+            </error>
+        </method>
+     </interface>
+
 </api>

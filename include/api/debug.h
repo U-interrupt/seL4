@@ -101,6 +101,11 @@ static inline void debug_printTCB(tcb_t *tcb)
     case ThreadState_BlockedOnNotification:
         state = "blocked on ntfn";
         break;
+#ifdef CONFIG_RISCV_UINTR
+    case ThreadState_BlockedOnUintr:
+        state = "blocked on uintr";
+        break;
+#endif
 #ifdef CONFIG_VTX
     case ThreadState_RunningVM:
         state = "running VM";

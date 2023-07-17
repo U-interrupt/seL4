@@ -87,6 +87,9 @@ static inline bool_t PURE isBlocked(const tcb_t *thread)
     case ThreadState_BlockedOnSend:
     case ThreadState_BlockedOnNotification:
     case ThreadState_BlockedOnReply:
+#ifdef CONFIG_RISCV_UINTR
+    case ThreadState_BlockedOnUintr:
+#endif
         return true;
 
     default:
@@ -102,6 +105,9 @@ static inline bool_t PURE isStopped(const tcb_t *thread)
     case ThreadState_BlockedOnSend:
     case ThreadState_BlockedOnNotification:
     case ThreadState_BlockedOnReply:
+#ifdef CONFIG_RISCV_UINTR
+    case ThreadState_BlockedOnUintr:
+#endif
         return true;
 
     default:

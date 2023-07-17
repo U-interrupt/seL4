@@ -63,13 +63,17 @@ struct uist {
 };
 
 typedef struct uist ui_send_t;
+
+#define UINTR_PTR(r) ((uintr_t *)(r))
+#define UINTR_REF(p) ((word_t)(p))
+
 #endif
 
 typedef struct arch_tcb {
     user_context_t tcbContext;
 #ifdef CONFIG_RISCV_UINTR
-    ui_send_t tcbUISend;
-    ui_recv_t tcbUIRecv;
+    uintr_t *tcbBoundUintr;
+    uist_entry_t *tcbSenderTable;
 #endif
 } arch_tcb_t;
 
@@ -120,6 +124,11 @@ static inline bool_t CONST cap_get_archCapIsPhysical(cap_t cap)
     case cap_asid_pool_cap:
         return true;
 
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap:
+        return true;
+#endif
+
     default:
         /* unreachable */
         return false;
@@ -144,6 +153,11 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
 
     case cap_asid_pool_cap:
         return seL4_ASIDPoolBits;
+
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap:
+        return seL4_UintrBits;
+#endif
 
     default:
         assert(!"Unknown cap type");
@@ -172,6 +186,11 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
     case cap_asid_pool_cap:
         return ASID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
 
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap:
+        return UINTR_PTR(cap_uintr_cap_get_capUintrPtr(cap));
+#endif
+
     default:
         assert(!"Unknown cap type");
         /* Unreachable, but GCC can't figure that out */
@@ -181,6 +200,11 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
 
 static inline bool_t CONST Arch_isCapRevocable(cap_t derivedCap, cap_t srcCap)
 {
+    if (cap_get_capType(derivedCap) == cap_uintr_cap) {
+        return (cap_uintr_cap_get_capUintrBadge(derivedCap) !=
+                cap_uintr_cap_get_capUintrBadge(srcCap)); 
+    }
+
     return false;
 }
 

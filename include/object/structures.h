@@ -168,6 +168,9 @@ enum _thread_state {
     ThreadState_BlockedOnSend,
     ThreadState_BlockedOnReply,
     ThreadState_BlockedOnNotification,
+#ifdef CONFIG_RISCV_UINTR
+    ThreadState_BlockedOnUintr,
+#endif
 #ifdef CONFIG_VTX
     ThreadState_RunningVM,
 #endif

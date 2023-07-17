@@ -157,6 +157,14 @@ void print_cap_arch(cap_t cap)
         break;
     }
     /* riscv specific caps */
+#ifdef CONFIG_RISCV_UINTR
+    case cap_uintr_cap: {
+        printf("%p_uintr ", (void *)cap_uintr_cap_get_capUintrPtr(cap));
+        printf("(base: %p, index: %lu, ", (void *)cap_uintr_cap_get_capUintrSendBase(cap), (unsigned long)cap_uintr_cap_get_capUintrSendIndex(cap));
+        long unsigned int badge = cap_uintr_cap_get_capUintrBadge(cap);
+        badge ? printf("badge: %lu)\n", badge) : printf(")\n");
+    }
+#endif
     /* nothing */
     default: {
         printf("[unknown cap %lu]\n", (long unsigned int)cap_get_capType(cap));

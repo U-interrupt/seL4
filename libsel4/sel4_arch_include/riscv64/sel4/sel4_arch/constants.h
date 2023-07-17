@@ -29,6 +29,10 @@
 #define seL4_TCBBits            10
 #endif
 
+#ifdef CONFIG_RISCV_UINTR
+#define seL4_UintrBits          4
+#endif
+
 /* Sv39/Sv48 pages/ptes sizes */
 #define seL4_PageTableEntryBits 3
 #define seL4_PageTableIndexBits 9

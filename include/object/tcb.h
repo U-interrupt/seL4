@@ -145,6 +145,10 @@ exception_t decodeSetSpace(cap_t cap, word_t length,
 exception_t decodeDomainInvocation(word_t invLabel, word_t length, word_t *buffer);
 exception_t decodeBindNotification(cap_t cap);
 exception_t decodeUnbindNotification(cap_t cap);
+#ifdef CONFIG_RISCV_UINTR
+exception_t decodeBindUintr(cap_t cap);
+exception_t decodeUnbindUintr(cap_t cap);
+#endif
 #ifdef CONFIG_KERNEL_MCS
 exception_t decodeSetTimeoutEndpoint(cap_t cap, cte_t *slot);
 #endif
@@ -213,6 +217,9 @@ exception_t invokeTCB_ReadRegisters(tcb_t *src, bool_t suspendSource,
 exception_t invokeTCB_WriteRegisters(tcb_t *dest, bool_t resumeTarget,
                                      word_t n, word_t arch, word_t *buffer);
 exception_t invokeTCB_NotificationControl(tcb_t *tcb, notification_t *ntfnPtr);
+#ifdef CONFIG_RISCV_UINTR
+exception_t invokeTCB_UintrControl(tcb_t *tcb, uintr_t *uintrPtr);
+#endif
 
 cptr_t PURE getExtraCPtr(word_t *bufferPtr, word_t i);
 void setExtraBadge(word_t *bufferPtr, word_t badge, word_t i);

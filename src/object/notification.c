@@ -353,10 +353,6 @@ void bindNotification(tcb_t *tcb, notification_t *ntfnPtr)
 {
     notification_ptr_set_ntfnBoundTCB(ntfnPtr, (word_t)tcb);
     tcb->tcbBoundNotification = ntfnPtr;
-
-#ifdef CONFIG_RISCV_UINTR
-    alloc_uintc(tcb);
-#endif
 }
 
 #ifdef CONFIG_KERNEL_MCS
