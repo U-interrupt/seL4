@@ -58,6 +58,7 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 
 cap_t CONST Arch_updateCapData(bool_t preserve, word_t data, cap_t cap)
 {
+#ifdef CONFIG_RISCV_UINTR
     if (cap_get_capType(cap) == cap_uintr_cap) {
         if (!preserve && cap_uintr_cap_get_capUintrBadge(cap) == 0) {
             userError("uintr update badge\n");
@@ -66,6 +67,7 @@ cap_t CONST Arch_updateCapData(bool_t preserve, word_t data, cap_t cap)
             return cap_null_cap_new();
         }
     }
+#endif
     return cap;
 }
 
@@ -348,6 +350,7 @@ exception_t Arch_decodeInvocation(
     word_t *buffer
 )
 {
+#ifdef CONFIG_RISCV_UINTR
     if (cap_get_capType(cap) == cap_uintr_cap) {
         int index;
         tcb_t *tcb;
@@ -373,7 +376,7 @@ exception_t Arch_decodeInvocation(
         setThreadState(tcb, ThreadState_Restart);
         return EXCEPTION_NONE;
     }
-
+#endif
     return decodeRISCVMMUInvocation(label, length, cptr, slot, cap, call, buffer);
 }
 

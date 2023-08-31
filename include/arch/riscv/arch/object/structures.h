@@ -200,11 +200,12 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
 
 static inline bool_t CONST Arch_isCapRevocable(cap_t derivedCap, cap_t srcCap)
 {
+#ifdef CONFIG_RISCV_UINTR
     if (cap_get_capType(derivedCap) == cap_uintr_cap) {
         return (cap_uintr_cap_get_capUintrBadge(derivedCap) !=
-                cap_uintr_cap_get_capUintrBadge(srcCap)); 
+                cap_uintr_cap_get_capUintrBadge(srcCap));
     }
-
+#endif
     return false;
 }
 

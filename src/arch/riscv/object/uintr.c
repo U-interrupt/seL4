@@ -6,6 +6,8 @@
 
 #include <arch/object/uintr.h>
 
+#ifdef CONFIG_RISCV_UINTR
+
 void bindUintr(tcb_t *tcb, uintr_t *uintrPtr)
 {
     uintr_ptr_set_uintrBoundTCB(uintrPtr, (word_t)tcb);
@@ -142,3 +144,5 @@ int registerUintrSender(tcb_t *tcb, uintr_t *uintrPtr, cte_t *slot)
 
     return i;
 }
+
+#endif /* CONFIG_RISCV_UINTR */
