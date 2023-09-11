@@ -1,46 +1,22 @@
-/* SPDX-License-Identifier: BSD-3-Clause */
-
-/*
- * Copyright (c) 2012-2014, The Regents of the University of California
- * (Regents).  All Rights Reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *  1. Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *  2. Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *  3. Neither the name of the Regents nor the
- *     names of its contributors may be used to endorse or promote products
- *     derived from this software without specific prior written permission.
- *
- *  IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT,
- *  SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING
- *  OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS
- *  BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- *  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
- *  HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
- *  MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
- */
-
 /dts-v1/;
 
 / {
-	#address-cells = <1>;
-	#size-cells = <1>;
-	compatible = "freechips,rocketchip-unknown-dev";
-	model = "freechips,rocketchip-unknown";
-  	chosen {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	compatible = "freechips,rocket-chip-dev";
+	model = "freechips,rocket-chip-zcu102";
+
+	chosen {
+		bootargs = [00];
+		stdout-path = "/soc/serial@60000000";
 	};
-	L13: cpus {
+
+	L19: cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		L5: cpu@0 {
-			clock-frequency = <0>;
+		timebase-frequency = <10000000>;
+		L4: cpu@0 {
+			clock-frequency = <100000000>;
 			compatible = "sifive,rocket0", "riscv";
 			d-cache-block-size = <64>;
 			d-cache-sets = <64>;
@@ -48,17 +24,80 @@
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";
+			hardware-exec-breakpoint-count = <1>;
 			i-cache-block-size = <64>;
 			i-cache-sets = <64>;
 			i-cache-size = <16384>;
 			i-tlb-sets = <1>;
 			i-tlb-size = <32>;
 			mmu-type = "riscv,sv39";
-			next-level-cache = <&L6>;
-			reg = <0>;
+			next-level-cache = <&L14>;
+			reg = <0x0>;
 			riscv,isa = "rv64imafdc";
+			riscv,pmpgranularity = <4>;
+			riscv,pmpregions = <8>;
 			status = "okay";
-			timebase-frequency = <1000000>;
+			timebase-frequency = <10000000>;
+			tlb-split;
+			L2: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		L7: cpu@1 {
+			clock-frequency = <100000000>;
+			compatible = "sifive,rocket0", "riscv";
+			d-cache-block-size = <64>;
+			d-cache-sets = <64>;
+			d-cache-size = <16384>;
+			d-tlb-sets = <1>;
+			d-tlb-size = <32>;
+			device_type = "cpu";
+			hardware-exec-breakpoint-count = <1>;
+			i-cache-block-size = <64>;
+			i-cache-sets = <64>;
+			i-cache-size = <16384>;
+			i-tlb-sets = <1>;
+			i-tlb-size = <32>;
+			mmu-type = "riscv,sv39";
+			next-level-cache = <&L14>;
+			reg = <0x1>;
+			riscv,isa = "rv64imafdc";
+			riscv,pmpgranularity = <4>;
+			riscv,pmpregions = <8>;
+			status = "okay";
+			timebase-frequency = <10000000>;
+			tlb-split;
+			L5: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		L6: cpu@2 {
+			clock-frequency = <100000000>;
+			compatible = "sifive,rocket0", "riscv";
+			d-cache-block-size = <64>;
+			d-cache-sets = <64>;
+			d-cache-size = <16384>;
+			d-tlb-sets = <1>;
+			d-tlb-size = <32>;
+			device_type = "cpu";
+			hardware-exec-breakpoint-count = <1>;
+			i-cache-block-size = <64>;
+			i-cache-sets = <64>;
+			i-cache-size = <16384>;
+			i-tlb-sets = <1>;
+			i-tlb-size = <32>;
+			mmu-type = "riscv,sv39";
+			next-level-cache = <&L14>;
+			reg = <0x2>;
+			riscv,isa = "rv64imafdc";
+			riscv,pmpgranularity = <4>;
+			riscv,pmpregions = <8>;
+			status = "okay";
+			timebase-frequency = <10000000>;
 			tlb-split;
 			L3: interrupt-controller {
 				#interrupt-cells = <1>;
@@ -66,61 +105,111 @@
 				interrupt-controller;
 			};
 		};
+		L12: cpu@3 {
+			clock-frequency = <100000000>;
+			compatible = "sifive,rocket0", "riscv";
+			d-cache-block-size = <64>;
+			d-cache-sets = <64>;
+			d-cache-size = <16384>;
+			d-tlb-sets = <1>;
+			d-tlb-size = <32>;
+			device_type = "cpu";
+			hardware-exec-breakpoint-count = <1>;
+			i-cache-block-size = <64>;
+			i-cache-sets = <64>;
+			i-cache-size = <16384>;
+			i-tlb-sets = <1>;
+			i-tlb-size = <32>;
+			mmu-type = "riscv,sv39";
+			next-level-cache = <&L14>;
+			reg = <0x3>;
+			riscv,isa = "rv64imafdc";
+			riscv,pmpgranularity = <4>;
+			riscv,pmpregions = <8>;
+			status = "okay";
+			timebase-frequency = <10000000>;
+			tlb-split;
+			L20: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
 	};
-	L6: memory@80000000 {
+	L14: memory@80000000 {
 		device_type = "memory";
-		reg = <0x80000000 0x10000000>;
+		reg = <0x0 0x80000000 0x0 0x10000000>;
 	};
-	L12: soc {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "freechips,rocketchip-unknown-soc", "simple-bus";
+	L18: soc {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		compatible = "freechips.rocketchip-unknown-soc", "simple-bus";
 		ranges;
-		L10: blkdev-controller@10015000 {
-			compatible = "ucbbar,blkdev";
-			interrupt-parent = <&L0>;
-			interrupts = <3>;
-			reg = <0x10015000 0x1000>;
-			reg-names = "control";
-		};
-		L1: clint@2000000 {
+		L9: clint@2000000 {
 			compatible = "riscv,clint0";
-			interrupts-extended = <&L3 3 &L3 7>;
-			reg = <0x2000000 0x10000>;
+			interrupts-extended = <&L2 3 &L2 7 &L5 3 &L5 7 &L3 3 &L3 7 &L20 3 &L20 7>;
+			reg = <0x0 0x2000000 0x0 0x10000>;
 			reg-names = "control";
 		};
-		L2: debug-controller@0 {
+		L11: debug-controller@0 {
 			compatible = "sifive,debug-013", "riscv,debug-013";
-			interrupts-extended = <&L3 65535>;
-			reg = <0x0 0x1000>;
+			debug-attach = "dmi";
+			interrupts-extended = <&L2 65535 &L5 65535 &L3 65535 &L20 65535>;
+			reg = <0x0 0x0 0x0 0x1000>;
 			reg-names = "control";
 		};
-		L7: error-device@3000 {
+		L1: error-device@3000 {
 			compatible = "sifive,error0";
-			reg = <0x3000 0x1000>;
-			reg-names = "mem";
+			reg = <0x0 0x3000 0x0 0x1000>;
 		};
-		L9: external-interrupts {
-			interrupt-parent = <&L0>;
-			interrupts = <1 2>;
+		L13: external-interrupts {
+			interrupt-parent = <&L8>;
+			interrupts = <1 2 3 4 5 6>;
 		};
-		L0: interrupt-controller@c000000 {
+		L8: interrupt-controller@c000000 {
 			#interrupt-cells = <1>;
 			compatible = "riscv,plic0";
 			interrupt-controller;
-			interrupts-extended = <&L3 11 &L3 9>;
-			reg = <0xc000000 0x4000000>;
+			interrupts-extended = <&L2 11 &L2 9 &L5 11 &L5 9 &L3 11 &L3 9 &L20 11 &L20 9>;
+			reg = <0x0 0xc000000 0x0 0x4000000>;
 			reg-names = "control";
 			riscv,max-priority = <7>;
-			riscv,ndev = <3>;
+			riscv,ndev = <6>;
 		};
-		L8: rom@10000 {
+		L15: mmio-port-axi4@60000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "simple-bus";
+			ranges = <0x60000000 0x0 0x60000000 0x20000000>;
+		};
+		L16: rom@10000 {
 			compatible = "sifive,rom0";
-			reg = <0x10000 0x10000>;
+			reg = <0x0 0x10000 0x0 0x10000>;
 			reg-names = "mem";
 		};
-	};
-	htif {
-		compatible = "ucb,htif0";
+		L0: subsystem_pbus_clock {
+			#clock-cells = <0>;
+			clock-frequency = <100000000>;
+			clock-output-names = "subsystem_pbus_clock";
+			compatible = "fixed-clock";
+		};
+		L10: uintc@3000000 {
+			#interrupt-cells = <1>;
+			compatible = "riscv,uintc0";
+			interrupt-controller;
+			interrupts-extended = <&L2 0 &L5 0 &L3 0 &L20 0>;
+			reg = <0x0 0x3000000 0x0 0x400>;
+			reg-names = "control";
+		};
+		L17: serial@60000000 {
+			compatible = "ns16550a";
+			current-speed = <115200>;
+			interrupt-parent = <&L8>;
+			interrupts = <1>;
+			reg = <0x00 0x60000000 0x00 0x2000>;
+			reg-shift = <2>;
+			reg-offset = <0x1000>;
+			clock-frequency = <100000000>;
+		};
 	};
 };

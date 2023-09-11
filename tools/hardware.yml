@@ -224,4 +224,5 @@ devices:
     regions:
       - index: 0
         kernel: UINTC_PPTR
-        kernel_size: 0x4000
+        # kernel_size: 0x4000
+        kernel_size: 0x400
