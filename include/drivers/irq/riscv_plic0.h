@@ -40,13 +40,25 @@
 
 #define PLIC_PENDING            0x1000
 #define PLIC_EN                 0x2000
+
+#ifdef CONFIG_RISCV_UINTR
+#define PLIC_EN_PER_HART        0x180
+#else
 #define PLIC_EN_PER_HART        0x100
+#endif
+
 #define PLIC_EN_PER_CONTEXT     0x80
 
 
 #define PLIC_THRES              0x200000
 #define PLIC_SVC_CONTEXT        1
+
+#ifdef CONFIG_RISCV_UINTR
+#define PLIC_THRES_PER_HART     0x3000
+#else
 #define PLIC_THRES_PER_HART     0x2000
+#endif
+
 #define PLIC_THRES_PER_CONTEXT  0x1000
 #define PLIC_THRES_CLAIM        0x4
 
